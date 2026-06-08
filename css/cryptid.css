@@ -1,0 +1,107 @@
+body {
+  background: #111;
+  color: #eee;
+  font-family: sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  margin-top: 20px;
+  font-size: 3em;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+}
+
+.setup-section,
+.player-section {
+  margin: 20px 0;
+}
+
+.hidden {
+  display: none;
+}
+
+label,
+select,
+button {
+  margin: 10px;
+}
+
+canvas {
+  margin-top: 20px;
+  background-color: #333;
+  border-radius: 10px;
+}
+
+.player-setup {
+  margin: 10px 0;
+}
+
+.player-row {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.player-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+}
+
+.player-column label {
+  margin-bottom: 5px;
+}
+
+.player-column select {
+  width: 120px;
+}
+
+.player-row {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.player-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px;
+}
+
+.player-label {
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.player-select {
+    padding: 6px 10px;
+    font-size: 14px;
+}
+
+#manualDropdownGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.field-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+select, input {
+    padding: 6px;
+    font-size: 14px;
+}

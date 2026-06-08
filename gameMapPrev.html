@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GameBoard Draw Preview</title>
+  <style>
+    body { background: #222; color: #eee; text-align: center; font-family: sans-serif; }
+    canvas { background: #444; margin-top: 20px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Hex Tile GameMap Preview</h1>
+  <canvas id="hexCanvas" width="760" height="800"></canvas>
+
+  <script>
+    class Tile {
+      constructor(x, y, terrain = 'grass') {
+        this.x = x;
+        this.y = y;
+        this.terrain = terrain;
+        this.territory = 'none';
+        this.structure = 'none';
+        this.colors = [];
+      }
+
+      addTerritory(territory) {
+        this.territory = territory;
+      }
+
+      draw(ctx, px, py, hexSize, colorPalette) {
+        // Flat-topped hex
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 180 * (60 * i);
+          const x = px + hexSize * Math.cos(angle);
+          const y = py + hexSize * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+
+        // Color by terrain
+        const terrainColors = {
+          desert: '#FFEB3B',
+          water: '#2196F3',
+          mountain: '#9E9E9E',
+          swamp: '#9C27B0',
+          forest: '#4CAF50',
+        };
+        ctx.fillStyle = terrainColors[this.terrain] || '#888';
+        ctx.globalAlpha = 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Outline
+        ctx.strokeStyle = '#ffffff88';
+        ctx.stroke();
+
+        let territoryInitial = '';
+        // Territory icon (simplified text)
+        if (this.territory !== 'none') {
+            territoryInitial = this.territory[0].toLowerCase(); // e.g., "b" for "bear"
+        }
+        // Choose a structure and color based on the territory
+        const structureColors = {
+        white: '#FFFFFF', // white
+        black: '#000000', // black
+        green: '#4CAF50', // green
+        blue: '#2196F3'  // blue
+        };
+
+
+        let structureNameInitial = '';
+        if (this.structure !== 'none') {
+            const structure = this.structure !== 'none' ? this.structure : '';
+            const structureInitial = this.territory !== 'none' ? territoryInitial : '-';
+            structureNameInitial = structure.split(' ').map(word => word[0]).join('-').toLowerCase(); // "abandoned shack" → "a-s"
+        }
+       
+
+        const label = `${territoryInitial} ${structureNameInitial}`;
+
+        ctx.fillStyle = structureColors[this.structureColor] || '#808080'; // default gray
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, px, py);
+        
+      }
+    }
+
+   class GameBoard {
+    constructor(csvData = null) {
+        this.grid = [];
+        this.rows = 0;
+        this.cols = 0;
+
+        if (csvData) {
+            this.loadFromCSV(csvData);
+        }
+    }
+
+    loadFromCSV(csvData) {
+        const lines = csvData.trim().split('\n');
+        const [rowsStr, colsStr] = lines[0].split(',').map(Number);
+        this.rows = rowsStr;
+        this.cols = colsStr;
+
+        this.grid = [];
+
+        const terrainMap = {
+        d: 'desert',
+        w: 'water',
+        m: 'mountain',
+        s: 'swamp',
+        f: 'forest'
+        };
+
+        const territoryMap = {
+        b: 'bear',
+        c: 'cougar'
+        };
+
+        for (let y = 0; y < this.rows; y++) {
+        const rowData = lines[y + 1].split(',');
+        const row = [];
+
+        for (let x = 0; x < this.cols; x++) {
+            const cell = rowData[x].trim();
+            let [terrainCode, territoryCode] = cell.split('-');
+            const terrain = terrainMap[terrainCode];
+            const tile = new Tile(x, y, terrain);
+
+            if (territoryCode && territoryMap[territoryCode]) {
+            tile.addTerritory(territoryMap[territoryCode]);
+            }
+
+            row.push(tile);
+        }
+
+        this.grid.push(row);
+        }
+    }
+
+    draw(ctx, hexSize, colorPalette) {
+        for (let y = 0; y < this.rows; y++) {
+        for (let x = 0; x < this.cols; x++) {
+            const tile = this.grid[y][x];
+
+            // Flat-topped hex coordinates (odd-q offset)
+            const px = hexSize * 3/2 * x + 50;
+            const py = hexSize * Math.sqrt(3) * (y + 0.5 * (x % 2)) + 50;
+
+            tile.draw(ctx, px, py, hexSize, colorPalette);
+        }
+        }
+    }
+
+    invertGrid() {
+        const newGrid = [];
+
+        for (let y = this.rows - 1; y >= 0; y--) {
+            const newRow = [];
+            for (let x = this.cols - 1; x >= 0; x--) {
+            const tile = this.grid[y][x];
+            const newX = this.cols - 1 - x;
+            const newY = this.rows - 1 - y;
+            tile.x = newX;
+            tile.y = newY;
+            newRow.push(tile);
+            }
+            newGrid.push(newRow);
+        }
+
+        this.grid = newGrid;
+    }
+}
+
+class GameMap {
+    constructor() {
+        this.grid = this.create2DArray(9, 12, null);
+        this.rows = 0;
+        this.cols = 0;
+    }
+
+    create2DArray(rows, cols, defaultValue) {
+        const arr = [];
+        for (let i = 0; i < rows; i++) {
+            arr[i] = [];
+            for (let j = 0; j < cols; j++) {
+                arr[i][j] = defaultValue;
+            }
+        }
+        return arr;
+    }
+
+    async loadFromCSV(csvData) {
+        const lines = csvData.trim().split('\n');
+        const [rowsStr, colsStr, structureStr] = lines[0].split(',').map(Number);
+        this.rows = rowsStr;
+        this.cols = colsStr;
+
+        const colorMap = {
+        w: 'white',
+        b: 'blue',
+        bl: 'black',
+        g: 'green',
+        };
+
+        const structureMap = {
+        s: 'standing stone',
+        a: 'abandoned shack'
+        };
+
+        const fetchPromises = [];
+
+        for (let y = 0; y < this.rows; y++) {
+            const rowData = lines[y + 1].split(',');
+            for (let x = 0; x < this.cols; x++) {
+                const cell = rowData[x].trim();
+                const cellNum = Number(cell);
+                const isNegative = cellNum < 0;
+                const index = Math.abs(cellNum);
+
+                const fetchPromise = fetch(`../assets/gameBoards/gameBoard${index}.csv`)
+                    .then(response => response.text())
+                    .then(csvGameBoardData => {
+                        const gameBoard = new GameBoard(csvGameBoardData);
+                        if (isNegative) {
+                            gameBoard.invertGrid();
+                        }
+
+                        for (let j = 0; j < 3; j++) {
+                            for (let i = 0; i < 6; i++) {
+                                const tile = gameBoard.grid[j][i];
+                                const newX = i + x * 6;
+                                const newY = j + y * 3;
+                                tile.x = newX;
+                                tile.y = newY;
+
+                                this.grid[j + y * 3][i + x * 6] = gameBoard.grid[j][i];
+                            }
+                        }
+                    });
+
+                fetchPromises.push(fetchPromise);
+            }
+        }
+
+        await Promise.all(fetchPromises);
+    }
+
+    addStructures(csvData){
+        const lines = csvData.trim().split('\n');
+        const [rowsStr, colsStr, structureStr] = lines[0].split(',').map(Number);
+        this.rows = rowsStr;
+        this.cols = colsStr;
+
+        const colorMap = {
+        w: 'white',
+        b: 'blue',
+        bl: 'black',
+        g: 'green',
+        };
+
+        const structureMap = {
+        s: 'standing stone',
+        a: 'abandoned shack'
+        };
+
+        for (let i = 0; i < structureStr; i++) {
+            const rowData = lines[i + 1 + this.rows].split(',');
+            const cell = rowData[2].trim();
+            let [colorCode, structureCode] = cell.split('-');
+            const color = colorMap[colorCode];
+            const structure = structureMap[structureCode];
+
+            this.grid[rowData[0]][rowData[1]].structure = structure;
+            this.grid[rowData[0]][rowData[1]].structureColor = color;
+        }
+    }
+
+    draw(ctx, hexSize, colorPalette) {
+        for (let y = 0; y < 9; y++) {
+            for (let x = 0; x < 12; x++) {
+                const tile = this.grid[y][x];
+
+                if (!tile) continue; // skip undefined tiles
+
+                const px = hexSize * 3/2 * x + 50;
+                const py = hexSize * Math.sqrt(3) * (y + 0.5 * (x % 2)) + 50;
+
+                tile.draw(ctx, px, py, hexSize, colorPalette);
+            }
+        }
+    }
+}
+
+
+    fetch('../assets/setups/setup1.csv')
+    .then(response => response.text())
+    .then(async csvData => {
+        const canvas = document.getElementById('hexCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+
+        const board = new GameMap();
+        await board.loadFromCSV(csvData); // wait until map is fully loaded
+        board.addStructures(csvData);
+        board.draw(ctx, 40, colorPalette);
+    });
+
+  </script>
+</body>
+</html>
