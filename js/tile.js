@@ -12,13 +12,13 @@ class Tile {
 
         // Image map: feel free to swap filenames
         this.imageMap = {
-        water: '../assets/tiles/waterTile.png',
-        mountain: '../assets/tiles/mountainTile.png',
-        forest: '../assets/tiles/forestTile.png',
-        swamp: '../assets/tiles/swampTile.png',
-        desert: '../assets/tiles/desertTile.png',
-        bear: '../assets/tiles/bearTerritory.png',
-        cougar: '../assets/tiles/cougarTerritory.png'
+        water: 'assets/tiles/waterTile.png',
+        mountain: 'assets/tiles/mountainTile.png',
+        forest: 'assets/tiles/forestTile.png',
+        swamp: 'assets/tiles/swampTile.png',
+        desert: 'assets/tiles/desertTile.png',
+        bear: 'assets/tiles/bearTerritory.png',
+        cougar: 'assets/tiles/cougarTerritory.png'
         };
 
         this.image = new Image();

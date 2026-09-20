@@ -1,75 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Cryptid</title>
-  <link rel="stylesheet" type="text/css" href="css/cryptid.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryptid</title>
+<link rel="stylesheet" href="css/cryptid.css">
 </head>
 <body>
-  <h1>Cryptid</h1>
+<div id="app">
+<h1>Cryptid</h1>
+<main class="container">
 
-  <div class="container">
-    <div class="setup-section" id="setupSection">
-      <h2>Setup</h2>
-      <label>
-        Board:
-        <select id="setupMode">
-          <option value="auto">Auto</option>
-          <option value="manual">Manual</option>
-          <option value="random">Random</option>
-        </select>
-      </label>
-      <label>
-        Player Count:
-        <select id="playerCount">
-          <option value="3">3 Players</option>
-          <option value="4">4 Players</option>
-          <option value="5">5 Players</option>
-        </select>
-      </label>
-      <label>
-        Highlight Mode:
-        <select id="highlightMode">
-          <option value="positive">Positive</option>
-          <option value="negative">Negative</option>
-        </select>
-      </label>
-      <br/>
-      <button id="createGameBtn">Create Game</button>
+<section v-if="!gameStarted && !noteModeVisible" class="setup-section">
+    <h2>Setup</h2>
+    <div class="setup-controls">
+        <label>Board:
+            <select v-model="setupMode">
+                <option value="auto">Auto</option>
+                <option value="manual">Manual</option>
+                <option value="random">Random</option>
+            </select>
+        </label>
+        <label>Player Count:
+            <select v-model.number="playerCount">
+                <option :value="3">3 Players</option>
+                <option :value="4">4 Players</option>
+                <option :value="5">5 Players</option>
+            </select>
+        </label>
+        <label>Highlight Mode:
+            <select v-model="highlightMode">
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+            </select>
+        </label>
+        <label>Mode:
+            <select v-model="gameMode">
+                <option value="standard">Standard</option>
+                <option value="advanced">Advanced</option>
+            </select>
+        </label>
     </div>
+    <div class="home-actions">
+        <button class="primary-button" @click="createGame">Create Game</button>
+        <button class="secondary-button" @click="openNoteMode">Note Mode</button>
+    </div>
+    <p class="help-text">Advanced mode adds black structures and the corresponding clue options and inverses.</p>
+</section>
 
-    <canvas id="gameCanvas" class="hidden" width="760" height="700"></canvas>
-
-    <div id="manualSetup" class="hidden p-4">
-        <h2 class="text-xl font-bold mb-4">Manual Setup</h2>
-        
-        <!-- Dropdown Grid -->
-        <div id="manualDropdownGrid" class="grid grid-cols-2 gap-4 mb-6"></div>
-        
-        <!-- Structure Inputs -->
-        <div id="manualStructureInputs" class="grid grid-cols-2 gap-4 mb-6"></div>
-
-        <!-- Buttons -->
-        <div class="flex gap-4">
-            <button id="confirmManualSetupBtn" class="bg-green-600 text-white px-4 py-2 rounded">Confirm</button>
-            <button id="resetManualSetupBtn" class="bg-red-600 text-white px-4 py-2 rounded">Reset</button>
+<section v-if="noteModeVisible" class="note-mode">
+    <div class="section-heading-row">
+        <div>
+            <h2>Note Mode</h2>
+            <p class="help-text">Click a clue under a player to cross it out. Click it again to restore it.</p>
         </div>
+        <button @click="closeNoteMode">Back to Home</button>
+    </div>
+    <div class="note-table-wrap">
+        <table class="note-table">
+            <thead>
+                <tr>
+                    <th class="note-clue-header">Player</th>
+                    <th v-for="(player, index) in notePlayers" :key="`note-head-${index}`">
+                        <div class="note-player-head">
+                            <span class="color-square" :style="{backgroundColor: player.color}"></span>
+                            <input v-model="player.name" :aria-label="`Player ${index + 1} name`">
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="option in noteOptions" :key="option.name">
+                    <th>{{ option.name }}</th>
+                    <td v-for="(player, playerIndex) in notePlayers" :key="`${option.name}-${playerIndex}`">
+                        <button
+                            class="note-cell"
+                            :class="{ crossed: isNoteCrossed(playerIndex, option.name) }"
+                            @click="toggleNote(playerIndex, option.name)"
+                        >
+                            <span>{{ option.name }}</span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 
-        <!-- CSV Preview -->
-        <pre id="csv-output" class="mt-4 bg-gray-200 p-2 rounded text-sm"></pre>
+<section v-if="manualSetupVisible" class="manual-setup">
+    <div class="section-heading-row">
+        <div>
+            <h2>Manual Game Creation</h2>
+            <p class="help-text">Click a board to rotate it 180°. Drag one board onto another to swap them. Structures are independent of boards, so moving a board never moves a structure.</p>
+        </div>
+        <button @click="cancelManualSetup">Back</button>
     </div>
 
-    <div class="player-section hidden" id="playerSection">
-        <h2>Player Setup</h2>
-        <div id="playerDropdowns" class="player-row"></div>
-        <button id="confirmSetupBtn">Confirm</button>
-        <button id="resetGameBtn">Reset</button>
-        <button id="allSolutions">Find all combos</button>
+    <div class="manual-editor-wrap">
+        <canvas id="manualEditorCanvas" width="760" height="700" @pointerdown="manualPointerDown" @pointermove="manualPointerMove" @pointerup="manualPointerUp" @pointercancel="manualPointerUp" @contextmenu="manualContextMenu" @dragover="allowStructureDrop" @drop="dropStructure"></canvas>
+        <p class="editor-hint">Board labels show the current six board positions. Drag a structure from the palette onto a hex, then drag placed structures to move them.</p>
     </div>
 
-    <script src="js/tile.js" type="text/javascript"></script>
-    <script src="js/gameBoard.js" type="text/javascript"></script>
-    <script src="js/gameMap.js" type="text/javascript"></script>
-    <script src="js/cryptid.js" type="text/javascript"></script>
+    <div class="structure-palette">
+        <div class="palette-title">Structures — drag onto the map</div>
+        <div class="palette-items">
+            <div
+                v-for="item in visibleManualStructurePalette"
+                :key="item.key"
+                class="structure-palette-item"
+                draggable="true"
+                @dragstart="startStructureDrag($event, item)"
+            >
+                <span class="structure-icon" :class="[item.structure === 'standing stone' ? 'stone' : 'shack']" :style="{backgroundColor: item.colorValue}"></span>
+                <span>{{ item.label }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <button class="confirm-button" :disabled="loading || visibleManualStructurePalette.length > 0" @click="createManualGame">
+            {{ loading ? 'Loading...' : (visibleManualStructurePalette.length ? `Place all structures (${visibleManualStructurePalette.length} remaining)` : 'Create Game') }}
+        </button>
+        <button class="reset-button" @click="resetManualEditor">Reset Editor</button>
+    </div>
+</section>
+
+<p v-if="loading && !manualSetupVisible" class="status">Loading board...</p>
+<p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+
+<section v-if="gameStarted && !manualSetupVisible && !noteModeVisible" class="board-section">
+    <canvas id="gameCanvas" width="760" height="700"></canvas>
+</section>
+
+<section v-if="playerSectionVisible" class="player-section">
+    <h2>Player Setup</h2>
+    <div class="player-row">
+        <div v-for="(player, index) in players" :key="`player-${index}`" class="player-column">
+            <div class="player-label">
+                <span class="color-square" :style="{backgroundColor: player.color}"></span>
+                <input class="player-name-input" v-model="player.name" :aria-label="`Player ${index + 1} name`">
+            </div>
+            <select v-model="playerSelections[index]" class="player-select">
+                <option v-for="option in gamePlayerOptions" :key="option.name" :value="option.name">{{ option.name }}</option>
+            </select>
+        </div>
+    </div>
+    <div class="button-row">
+        <button @click="confirmSetup" :disabled="loading">Confirm</button>
+        <button class="reset-button" @click="resetBoard">Reset</button>
+        <button @click="findSolutions" :disabled="loading || !gameMap">Find all combos</button>
+    </div>
+</section>
+
+</main>
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="js/tile.js"></script>
+<script src="js/gameBoard.js"></script>
+<script src="js/gameMap.js"></script>
+<script src="js/cryptid.js"></script>
 </body>
 </html>
