@@ -239,8 +239,8 @@ canvas {
 
 /* Note mode */
 .note-table-wrap {
-    overflow: auto;
-    max-height: 72vh;
+    overflow: visible;
+    max-height: none;
     border: 1px solid #444;
     border-radius: 8px;
     background: #181818;
@@ -251,10 +251,10 @@ canvas {
 }
 
 .note-table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
-    min-width: 0;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 .note-table th,
@@ -276,11 +276,13 @@ canvas {
     z-index: 2;
     background: #202020;
     text-align: left;
-    width: 280px;
+    width: auto;
+    min-width: 0;
 }
 
 .note-clue-header {
-    width: 280px;
+    width: auto;
+    min-width: 0;
 }
 
 .note-player-head {
@@ -291,13 +293,20 @@ canvas {
 }
 
 .note-player-head input {
-    width: 115px;
+    width: 125px;
+    min-width: 125px;
     box-sizing: border-box;
+}
+
+.note-table thead th,
+.note-table tbody td {
+    min-width: 170px;
+    width: 170px;
 }
 
 .note-cell {
     width: 100%;
-    min-width: 0;
+    min-width: 170px;
     min-height: 34px;
     margin: 0;
     padding: 6px;
@@ -409,16 +418,15 @@ canvas {
         flex-direction: column;
     }
 
-    .note-table tbody th {
-        width: 180px;
-    }
-
-    .note-clue-header {
-        width: 180px;
+    .note-table thead th,
+    .note-table tbody td {
+        min-width: 160px;
+        width: 160px;
     }
 
     .note-player-head input {
-        width: 90px;
+        width: 115px;
+        min-width: 115px;
     }
 }
 

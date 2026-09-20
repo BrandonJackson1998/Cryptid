@@ -60,7 +60,6 @@
         <table class="note-table">
             <thead>
                 <tr>
-                    <th class="note-clue-header">Player</th>
                     <th v-for="(player, index) in notePlayers" :key="`note-head-${index}`">
                         <div class="note-player-head">
                             <span class="color-square" :style="{backgroundColor: player.color}"></span>
@@ -71,15 +70,12 @@
             </thead>
             <tbody>
                 <tr v-for="option in noteOptions" :key="option.name">
-                    <th>{{ option.name }}</th>
                     <td v-for="(player, playerIndex) in notePlayers" :key="`${option.name}-${playerIndex}`">
                         <button
                             class="note-cell"
                             :class="{ crossed: isNoteCrossed(playerIndex, option.name) }"
                             @click="toggleNote(playerIndex, option.name)"
-                        >
-                            <span>{{ option.name }}</span>
-                        </button>
+                        >{{ option.name }}</button>
                     </td>
                 </tr>
             </tbody>
